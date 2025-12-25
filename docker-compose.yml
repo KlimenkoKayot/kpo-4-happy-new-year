@@ -1,0 +1,136 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: gozon-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gozon-network
+
+  postgres-orders:
+    image: postgres:15
+    container_name: gozon-postgres-orders
+    environment:
+      POSTGRES_DB: orders_db
+      POSTGRES_USER: orders_user
+      POSTGRES_PASSWORD: orders_pass
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orders_user -d orders_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gozon-network
+
+  postgres-payments:
+    image: postgres:15
+    container_name: gozon-postgres-payments
+    environment:
+      POSTGRES_DB: payments_db
+      POSTGRES_USER: payments_user
+      POSTGRES_PASSWORD: payments_pass
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payments_user -d payments_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gozon-network
+
+  orders-service:
+    build:
+      context: ./src/orders-service
+      dockerfile: Dockerfile
+    container_name: gozon-orders-service
+    ports:
+      - "5001:8080"
+    environment:
+      DB_HOST: postgres-orders
+      DB_PORT: "5432"
+      DB_USER: orders_user
+      DB_PASSWORD: orders_pass
+      DB_NAME: orders_db
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+      SERVER_PORT: "8080"
+    depends_on:
+      postgres-orders:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - gozon-network
+
+  payments-service:
+    build:
+      context: ./src/payments-service
+      dockerfile: Dockerfile
+    container_name: gozon-payments-service
+    ports:
+      - "5002:8080"
+    environment:
+      DB_HOST: postgres-payments
+      DB_PORT: "5432"
+      DB_USER: payments_user
+      DB_PASSWORD: payments_pass
+      DB_NAME: payments_db
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+      SERVER_PORT: "8080"
+    depends_on:
+      postgres-payments:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - gozon-network
+
+  api-gateway:
+    build:
+      context: ./src/api-gateway
+      dockerfile: Dockerfile
+    container_name: gozon-api-gateway
+    ports:
+      - "5000:8080"
+    environment:
+      ORDERS_SERVICE_URL: http://orders-service:8080
+      PAYMENTS_SERVICE_URL: http://payments-service:8080
+      SERVER_PORT: "8080"
+    depends_on:
+      - orders-service
+      - payments-service
+    networks:
+      - gozon-network
+
+  frontend:
+    build:
+      context: ./src/frontend
+      dockerfile: Dockerfile
+    container_name: gozon-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - gozon-network
+
+networks:
+  gozon-network:
+    driver: bridge

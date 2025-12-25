@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Гоzон - Микросервисная система</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🛒 Гоzон</h1>
+        <p class="subtitle">Микросервисная система на Golang с DDD</p>
+
+        <div class="user-section">
+            <label for="userId">User ID:</label>
+            <input type="text" id="userId" placeholder="550e8400-e29b-41d4-a716-446655440000">
+        </div>
+
+        <div class="section">
+            <h2>💰 Управление аккаунтом</h2>
+            <div class="actions">
+                <button onclick="createAccount()">Создать аккаунт</button>
+                <button onclick="getBalance()">Проверить баланс</button>
+            </div>
+            <div class="form-group">
+                <input type="number" id="depositAmount" placeholder="Сумма пополнения" min="0" step="0.01">
+                <button onclick="deposit()">Пополнить</button>
+            </div>
+            <div id="balanceResult" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h2>📦 Заказы</h2>
+            <div class="form-group">
+                <input type="number" id="orderAmount" placeholder="Сумма заказа" min="0" step="0.01">
+                <input type="text" id="orderDescription" placeholder="Описание заказа">
+                <button onclick="createOrder()">Создать заказ</button>
+            </div>
+            <button onclick="getOrders()">Показать мои заказы</button>
+            <div id="ordersResult" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h2>📊 Статус системы</h2>
+            <button onclick="checkHealth()">Проверить здоровье</button>
+            <div id="healthResult" class="result"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
